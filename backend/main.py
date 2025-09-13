@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
-from pydantic import BaseModel
-from typing import Dict
+from pydantic import BaseModel, ValidationError, HttpUrl
+from typing import Dict, Optional
 import logging
 from dotenv import load_dotenv
 import os
@@ -10,7 +10,6 @@ import os
 
 load_dotenv()
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="User API Service", version="1.0.0")
@@ -33,6 +32,18 @@ class UserData(BaseModel):
 
 class UserResponse(BaseModel):
     data: UserData
+
+# Pydantic models for external API response validation
+class ReqResUserData(BaseModel):
+    id: int
+    email: str
+    first_name: str
+    last_name: str
+    avatar: HttpUrl
+
+class ReqResResponse(BaseModel):
+    data: ReqResUserData
+    support: Optional[Dict] = None
 
 REQRES_BASE_URL = "https://reqres.in/api"
 REQRES_API_KEY = os.getenv("REQRES_API_KEY")
@@ -66,18 +77,24 @@ async def get_user(user_id: int) -> UserResponse:
 
             reqres_data = response.json()
 
-            if "data" not in reqres_data:
-                raise HTTPException(status_code=404, detail="User not found")
+            # Validate external API response with Pydantic
+            try:
+                reqres_response = ReqResResponse.model_validate(reqres_data)
+            except ValidationError as e:
+                logging.error(f"Invalid response from external API: {e}")
+                raise HTTPException(
+                    status_code=503,
+                    detail="External API returned invalid data format"
+                )
 
-            user_data = reqres_data["data"]
-
+            # Transform to our internal model
             return UserResponse(
                 data=UserData(
-                    id=user_data["id"],
-                    email=user_data["email"],
-                    first_name=user_data["first_name"],
-                    last_name=user_data["last_name"],
-                    avatar=user_data["avatar"]
+                    id=reqres_response.data.id,
+                    email=reqres_response.data.email,
+                    first_name=reqres_response.data.first_name,
+                    last_name=reqres_response.data.last_name,
+                    avatar=str(reqres_response.data.avatar)
                 )
             )
 
