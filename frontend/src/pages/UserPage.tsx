@@ -1,39 +1,81 @@
-import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import styled from 'styled-components';
 import { UserCard } from '../components/UserCard';
-import { fetchUser } from '../services/api';
-import type { User } from '../types/user';
+import { fetchUser, ApiError } from '../services/api';
+import { Container } from '../styles/GlobalStyles';
+
+const PageContainer = styled(Container)`
+  max-width: 800px;
+`;
+
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    text-align: center;
+  }
+`;
+
+const Title = styled.h1`
+  margin: 0;
+  color: #333;
+`;
+
+const UserIdInput = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const Label = styled.label`
+  font-weight: bold;
+  color: #333;
+`;
+
+const Input = styled.input`
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  width: 120px;
+`;
+
+const Instructions = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin: 1rem 0;
+`;
 
 export const UserPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      if (!id || isNaN(Number(id))) {
-        setError('Invalid user ID');
-        return;
+  const {
+    data: userResponse,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['user', id],
+    queryFn: () => fetchUser(Number(id)),
+    enabled: Boolean(id && !isNaN(Number(id)) && Number(id) > 0),
+    retry: (failureCount, error) => {
+      // Don't retry on 404 errors
+      if (error instanceof ApiError && error.statusCode === 404) {
+        return false;
       }
-
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const response = await fetchUser(Number(id));
-        setUser(response.data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load user');
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadUser();
-  }, [id]);
+      return failureCount < 2;
+    },
+  });
 
   const handleUserIdChange = (newId: string) => {
     if (newId && !isNaN(Number(newId)) && Number(newId) > 0) {
@@ -41,13 +83,26 @@ export const UserPage = () => {
     }
   };
 
+  const getErrorMessage = () => {
+    if (error instanceof ApiError) {
+      return error.message;
+    }
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return 'Failed to load user';
+  };
+
+  const shouldShowCard = Boolean(id && !isNaN(Number(id)) && Number(id) > 0);
+  const shouldShowInstructions = !id && !isLoading;
+
   return (
-    <div className="user-page">
-      <div className="header">
-        <h1>User Profile</h1>
-        <div className="user-id-input">
-          <label htmlFor="userId">User ID: </label>
-          <input
+    <PageContainer>
+      <Header>
+        <Title>User Profile</Title>
+        <UserIdInput>
+          <Label htmlFor="userId">User ID:</Label>
+          <Input
             id="userId"
             type="number"
             min="1"
@@ -55,30 +110,22 @@ export const UserPage = () => {
             onChange={(e) => handleUserIdChange(e.target.value)}
             placeholder="Enter user ID"
           />
-        </div>
-      </div>
+        </UserIdInput>
+      </Header>
 
-      {loading && (
-        <div className="loading">
-          <p>Loading user data...</p>
-        </div>
+      {shouldShowCard && (
+        <UserCard
+          user={userResponse?.data}
+          loading={isLoading}
+          error={error ? getErrorMessage() : undefined}
+        />
       )}
 
-      {error && (
-        <div className="error">
-          <p>Error: {error}</p>
-        </div>
-      )}
-
-      {user && !loading && !error && (
-        <UserCard user={user} />
-      )}
-
-      {!id && !loading && (
-        <div className="instructions">
+      {shouldShowInstructions && (
+        <Instructions>
           <p>Enter a user ID above to view user details, or visit /user/1 to /user/12 for sample users.</p>
-        </div>
+        </Instructions>
       )}
-    </div>
+    </PageContainer>
   );
 };

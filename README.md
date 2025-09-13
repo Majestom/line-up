@@ -50,8 +50,7 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
 ├── backend/
 │   ├── main.py              # FastAPI application
 │   ├── requirements.txt     # Python dependencies
-│   ├── Dockerfile          # Backend container config
-│   └── .env               # Environment variables
+│   └── Dockerfile          # Backend container config
 ├── frontend/
 │   ├── src/
 │   │   ├── components/     # Reusable UI components
@@ -62,6 +61,8 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
 │   │   └── main.tsx       # Application entry point
 │   ├── package.json       # Node.js dependencies
 │   └── Dockerfile         # Frontend container config
+├── .env.example           # Environment configuration template
+├── .gitignore             # Git ignore rules
 ├── docker-compose.yml     # Multi-container setup
 └── README.md              # This file
 ```
@@ -82,12 +83,22 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
    cd line-up
    ```
 
-2. **Start the application**
+2. **Configure environment variables**
+   ```bash
+   # Copy the centralized environment file
+   cp .env.example .env
+
+   # The .env file contains all configuration for both frontend and backend
+   # For development, the default values should work as-is
+   # For production, edit .env and update the values as needed
+   ```
+
+3. **Start the application**
    ```bash
    docker compose up --build
    ```
 
-3. **Access the application**
+4. **Access the application**
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:8000
    - API Documentation: http://localhost:8000/docs
@@ -112,7 +123,14 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
    pip install -r requirements.txt
    ```
 
-4. **Run the backend server**
+4. **Configure environment variables**
+   ```bash
+   # Use the centralized .env file from project root
+   # If running locally, the backend will read environment variables from the shell
+   # Make sure you've set up the root .env file as described in the Docker setup above
+   ```
+
+5. **Run the backend server**
    ```bash
    uvicorn main:app --host 0.0.0.0 --port 8000 --reload
    ```
@@ -162,6 +180,27 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
 2. **View Users**: Click on sample user buttons or navigate to `/user/{id}`
 3. **Switch Users**: Use the input field on the user page to change between users
 4. **Direct Navigation**: Access users directly via URL (e.g., `/user/5`)
+
+## Security Best Practices
+
+This project demonstrates proper security practices for handling API keys and environment variables:
+
+### Environment Variables
+- **Never commit `.env` files** to version control
+- **Use `.env.example`** files to document required environment variables
+- **Store production secrets** in secure environment variable stores (AWS Secrets Manager, Azure Key Vault, etc.)
+- **Use different keys** for different environments (dev, staging, production)
+
+### API Key Management
+- **Principle of least privilege**: Use keys with minimal required permissions
+- **Rotation**: Regularly rotate API keys in production
+- **Monitoring**: Monitor API key usage for suspicious activity
+- **Fallback handling**: Graceful degradation when API keys are invalid or missing
+
+### Docker Security
+- **Environment variable injection**: Use `${VARIABLE:-default}` syntax in docker-compose.yml
+- **No secrets in images**: Keep secrets out of Docker images and layers
+- **Runtime configuration**: Pass secrets at container runtime, not build time
 
 ## Development Notes
 
