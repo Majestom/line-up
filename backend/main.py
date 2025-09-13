@@ -14,12 +14,13 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="User API Service", version="1.0.0")
 
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    # TODO: For production, configure allowed origins via environment variables
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=[origin.strip() for origin in CORS_ORIGINS],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
