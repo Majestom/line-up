@@ -1,19 +1,96 @@
-from fastapi import FastAPI, HTTPException, Path
+from fastapi import FastAPI, HTTPException, Path, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 from pydantic import BaseModel, ValidationError, HttpUrl
 from typing import Dict, Optional
 import logging
+import logging.config
 from dotenv import load_dotenv
 import os
 from datetime import datetime, timezone
+import uuid
+import json
+import time
 
 
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO)
+# Configure structured logging
+LOGGING_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "structured": {
+            "format": json.dumps({
+                "timestamp": "%(asctime)s",
+                "level": "%(levelname)s",
+                "message": "%(message)s",
+                "module": "%(name)s",
+                "request_id": "%(request_id)s",
+                "service": "user-api",
+                "environment": os.getenv("NODE_ENV", "development")
+            }).replace('"%(', '%(').replace(')s"', ')s')
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "structured",
+            "stream": "ext://sys.stdout"
+        }
+    },
+    "root": {
+        "level": "INFO",
+        "handlers": ["console"]
+    }
+}
+
+logging.config.dictConfig(LOGGING_CONFIG)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="User API Service", version="1.0.0")
+
+# Request ID middleware
+@app.middleware("http")
+async def add_request_id_middleware(request: Request, call_next):
+    request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
+
+    # Add request_id to logging context
+    old_factory = logging.getLogRecordFactory()
+    def record_factory(*args, **kwargs):
+        record = old_factory(*args, **kwargs)
+        record.request_id = getattr(request.state, 'request_id', 'unknown')
+        return record
+    logging.setLogRecordFactory(record_factory)
+
+    start_time = time.time()
+
+    # Log request start
+    logger.info("Request started", extra={
+        "method": request.method,
+        "url": str(request.url),
+        "user_agent": request.headers.get("user-agent", "")
+    })
+
+    response = await call_next(request)
+
+    # Log request completion
+    process_time = time.time() - start_time
+    logger.info("Request completed", extra={
+        "method": request.method,
+        "url": str(request.url),
+        "status_code": response.status_code,
+        "process_time": round(process_time, 3)
+    })
+
+    # Add request ID to response headers
+    response.headers["X-Request-ID"] = request_id
+
+    # Restore original factory
+    logging.setLogRecordFactory(old_factory)
+
+    return response
 
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
 
@@ -131,7 +208,11 @@ async def get_user(
             try:
                 reqres_response = ReqResResponse.model_validate(reqres_data)
             except ValidationError as e:
-                logging.error(f"Invalid response from external API: {e}")
+                logger.error("Invalid response from external API", extra={
+                    "validation_error": str(e),
+                    "user_id": user_id,
+                    "external_api_url": f"{REQRES_BASE_URL}/users/{user_id}"
+                })
                 raise HTTPException(
                     status_code=503,
                     detail="External API returned invalid data format"
@@ -149,11 +230,20 @@ async def get_user(
             )
 
         except httpx.HTTPStatusError as e:
-            logging.error(f"HTTP Status Error: {e.response.status_code} - {e.response.text}")
+            logger.error("HTTP Status Error from external API", extra={
+                "status_code": e.response.status_code,
+                "response_text": e.response.text,
+                "user_id": user_id,
+                "external_api_url": f"{REQRES_BASE_URL}/users/{user_id}"
+            })
             if e.response.status_code == 404:
                 raise HTTPException(status_code=404, detail="User not found")
             elif e.response.status_code == 401:
-                logging.error(f"API authentication failed. API key configured: {bool(REQRES_API_KEY)}")
+                logger.error("API authentication failed", extra={
+                    "api_key_configured": bool(REQRES_API_KEY),
+                    "user_id": user_id,
+                    "external_api_url": f"{REQRES_BASE_URL}/users/{user_id}"
+                })
                 raise HTTPException(
                     status_code=503,
                     detail="External API is temporarily unavailable due to authentication issues. Please try again later."
@@ -164,13 +254,23 @@ async def get_user(
                     detail=f"External API returned an error (HTTP {e.response.status_code}). Please try again later."
                 )
         except httpx.RequestError as e:
-            logging.error(f"Request Error: {str(e)}")
+            logger.error("Request Error connecting to external API", extra={
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "user_id": user_id,
+                "external_api_url": f"{REQRES_BASE_URL}/users/{user_id}"
+            })
             raise HTTPException(
                 status_code=503,
                 detail="Unable to connect to external API. Please check your internet connection or try again later."
             )
         except Exception as e:
-            logging.error(f"Unexpected error: {str(e)}")
+            logger.error("Unexpected error while fetching user data", extra={
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "user_id": user_id,
+                "external_api_url": f"{REQRES_BASE_URL}/users/{user_id}"
+            })
             raise HTTPException(
                 status_code=500,
                 detail="An unexpected error occurred while fetching user data. Please try again later."
