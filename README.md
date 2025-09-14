@@ -51,8 +51,18 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
 
 ```
 ├── backend/
-│   ├── main.py              # FastAPI application
+│   ├── main.py              # FastAPI application entry point
+│   ├── config.py            # Centralised configuration management
+│   ├── models.py            # Pydantic data models
+│   ├── api_client.py        # External API client
+│   ├── middleware.py        # Request handling and logging
+│   ├── health.py            # Health check endpoints
+│   ├── users.py             # User data endpoints
+│   ├── tests/               # Test suite
+│   │   ├── test_api.py      # Integration tests
+│   │   └── test_api_client.py # Unit tests
 │   ├── requirements.txt     # Python dependencies
+│   ├── pytest.ini          # Test configuration
 │   └── Dockerfile          # Backend container config
 ├── frontend/
 │   ├── src/
@@ -76,7 +86,7 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
 
 - **Node.js** 20.19+ (for frontend development)
 - **Python** 3.11+ (for backend development)
-- **Docker** & **Docker Compose** (for containerized deployment)
+- **Docker** & **Docker Compose** (for containerised deployment)
 
 ### Option 1: Docker Compose (Recommended)
 
@@ -90,7 +100,7 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
 2. **Configure environment variables**
 
    ```bash
-   # Copy the centralized environment file
+   # Copy the centralised environment file
    cp .env.example .env
 
    # The .env file contains all configuration for both frontend and backend
@@ -135,7 +145,7 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
 4. **Configure environment variables**
 
    ```bash
-   # Use the centralized .env file from project root
+   # Use the centralised .env file from project root
    # If running locally, the backend will read environment variables from the shell
    # Make sure you've set up the root .env file as described in the Docker setup above
    ```
@@ -168,7 +178,8 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
 
 ### Backend API
 
-- `GET /` - Health check endpoint
+- `GET /` - Root endpoint
+- `GET /health` - Health check with dependency monitoring
 - `GET /user/{user_id}` - Fetch user data by ID (1-12)
 - `GET /docs` - Interactive API documentation
 
@@ -237,24 +248,63 @@ This project demonstrates proper security practices for handling API keys and en
 
 - **Proxy pattern**: Backend acts as a proxy to reqres.in, allowing data transformation
 - **RESTful design**: Clean API endpoints following REST conventions
-- **Docker support**: Both services containerized for easy deployment
+- **Docker support**: Both services containerised for easy deployment
 - **Error boundaries**: Graceful error handling in the UI
 
 ## Testing
 
+The backend includes a comprehensive test suite following best practices for FastAPI applications.
+
 ### Backend Testing
 
+**Run the complete test suite:**
+
 ```bash
+# Using Docker (recommended)
+docker compose run --rm backend pytest tests/ -v
+
+# Or locally (requires pytest installation)
 cd backend
-# Test the API endpoint
-curl http://localhost:8000/user/1
+pytest tests/ -v
 ```
+
+**Test Coverage:**
+
+- **Integration tests** (`test_api.py`): Test all API endpoints with real FastAPI TestClient
+
+  - Health endpoint functionality and structure
+  - User endpoints with valid/invalid IDs
+  - Error handling (404, 422 validation errors)
+  - Request ID headers and CORS configuration
+  - Root endpoint functionality
+
+- **Unit tests** (`test_api_client.py`): Test core business logic
+  - API client header configuration
+  - Client initialisation and settings
+
+**Manual API Testing:**
+
+```bash
+# Test user endpoint
+curl http://localhost:8000/user/1
+
+# Test health endpoint
+curl http://localhost:8000/health
+
+# Test root endpoint
+curl http://localhost:8000/
+```
+
+**Expected Test Results:** All tests should pass (12 tests total: 9 integration, 3 unit)
 
 ### Frontend Testing
 
-- Navigate to different user URLs
-- Test input field functionality
+Manual testing approach:
+
+- Navigate to different user URLs (`/user/1` through `/user/12`)
+- Test input field functionality for user switching
 - Verify responsive design on different screen sizes
+- Test error handling with invalid user IDs
 
 ## Deployment
 
