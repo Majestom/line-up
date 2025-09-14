@@ -6,6 +6,7 @@ from typing import Dict, Optional
 import logging
 from dotenv import load_dotenv
 import os
+from datetime import datetime, timezone
 
 
 load_dotenv()
@@ -46,12 +47,47 @@ class ReqResResponse(BaseModel):
     data: ReqResUserData
     support: Optional[Dict] = None
 
+class HealthResponse(BaseModel):
+    status: str
+    timestamp: str
+    version: str
+    external_api_status: str
+    environment: str
+
 REQRES_BASE_URL = "https://reqres.in/api"
 REQRES_API_KEY = os.getenv("REQRES_API_KEY")
 
 @app.get("/")
 async def root() -> Dict[str, str]:
     return {"message": "User API Service is running"}
+
+@app.get("/health", response_model=HealthResponse)
+async def health_check() -> HealthResponse:
+    """
+    Health check endpoint for monitoring and load balancer probes.
+
+    Checks the status of the service and its dependencies.
+
+    Returns:
+        HealthResponse: Service health information including external API status
+    """
+    # Check external API availability
+    external_api_status = "unknown"
+    try:
+        headers = {"x-api-key": REQRES_API_KEY} if REQRES_API_KEY else {}
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(f"{REQRES_BASE_URL}/users/1", headers=headers)
+            external_api_status = "healthy" if response.status_code == 200 else "degraded"
+    except Exception:
+        external_api_status = "unhealthy"
+
+    return HealthResponse(
+        status="healthy",
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        version="1.0.0",
+        external_api_status=external_api_status,
+        environment=os.getenv("NODE_ENV", "development")
+    )
 
 @app.get("/user/{user_id}", response_model=UserResponse)
 async def get_user(
