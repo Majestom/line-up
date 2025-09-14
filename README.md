@@ -5,9 +5,10 @@ A full-stack application demonstrating API consumption, data reformatting, and u
 ## Project Overview
 
 This application consists of:
+
 - **Backend**: Python FastAPI service that proxies requests to the [reqres.in](https://reqres.in) API
 - **Frontend**: React TypeScript application with routing that displays user data
-- **Docker**: Containerization for easy deployment
+- **Docker**: Containerisation for easy deployment
 
 ## Architecture
 
@@ -28,17 +29,19 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
 - **Responsive design**: Works on desktop and mobile devices
 - **Error handling**: Graceful error messages for missing users or API failures
 - **Type safety**: Full TypeScript implementation
-- **Docker support**: Easy containerization and deployment
+- **Docker support**: Easy containerisation and deployment
 
 ## Technology Stack
 
 ### Backend
+
 - **FastAPI**: Modern Python web framework
 - **httpx**: Async HTTP client for external API calls
 - **Pydantic**: Data validation and settings management
 - **Uvicorn**: ASGI server for running the application
 
 ### Frontend
+
 - **React**: Component-based UI framework
 - **TypeScript**: Type-safe JavaScript
 - **Vite**: Fast build tool and development server (requires Node.js 20.19+)
@@ -78,12 +81,14 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
 ### Option 1: Docker Compose (Recommended)
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd line-up
    ```
 
 2. **Configure environment variables**
+
    ```bash
    # Copy the centralized environment file
    cp .env.example .env
@@ -94,6 +99,7 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
    ```
 
 3. **Start the application**
+
    ```bash
    docker compose up --build
    ```
@@ -108,22 +114,26 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
 #### Backend Setup
 
 1. **Navigate to backend directory**
+
    ```bash
    cd backend
    ```
 
 2. **Create virtual environment**
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. **Install dependencies**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 4. **Configure environment variables**
+
    ```bash
    # Use the centralized .env file from project root
    # If running locally, the backend will read environment variables from the shell
@@ -138,11 +148,13 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
 #### Frontend Setup
 
 1. **Navigate to frontend directory**
+
    ```bash
    cd frontend
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
@@ -186,18 +198,21 @@ The backend fetches data from reqres.in and reformats it to expose only user inf
 This project demonstrates proper security practices for handling API keys and environment variables:
 
 ### Environment Variables
+
 - **Never commit `.env` files** to version control
 - **Use `.env.example`** files to document required environment variables
 - **Store production secrets** in secure environment variable stores (AWS Secrets Manager, Azure Key Vault, etc.)
 - **Use different keys** for different environments (dev, staging, production)
 
 ### API Key Management
+
 - **Principle of least privilege**: Use keys with minimal required permissions
 - **Rotation**: Regularly rotate API keys in production
 - **Monitoring**: Monitor API key usage for suspicious activity
 - **Fallback handling**: Graceful degradation when API keys are invalid or missing
 
 ### Docker Security
+
 - **Environment variable injection**: Use `${VARIABLE:-default}` syntax in docker-compose.yml
 - **No secrets in images**: Keep secrets out of Docker images and layers
 - **Runtime configuration**: Pass secrets at container runtime, not build time
@@ -205,18 +220,21 @@ This project demonstrates proper security practices for handling API keys and en
 ## Development Notes
 
 ### Backend Decisions
+
 - **FastAPI**: Chosen for automatic API documentation, type hints, and async support
 - **httpx**: Used for async HTTP requests to external APIs
 - **CORS middleware**: Configured to allow frontend connections
 - **Error handling**: Comprehensive error responses for different failure scenarios
 
 ### Frontend Decisions
+
 - **React Router**: Enables URL-based navigation as required
 - **TypeScript**: Ensures type safety and better development experience
 - **Component structure**: Separation of concerns with dedicated components and pages
 - **CSS**: Custom styles for clean, responsive design
 
 ### Architecture Decisions
+
 - **Proxy pattern**: Backend acts as a proxy to reqres.in, allowing data transformation
 - **RESTful design**: Clean API endpoints following REST conventions
 - **Docker support**: Both services containerized for easy deployment
@@ -225,6 +243,7 @@ This project demonstrates proper security practices for handling API keys and en
 ## Testing
 
 ### Backend Testing
+
 ```bash
 cd backend
 # Test the API endpoint
@@ -232,6 +251,7 @@ curl http://localhost:8000/user/1
 ```
 
 ### Frontend Testing
+
 - Navigate to different user URLs
 - Test input field functionality
 - Verify responsive design on different screen sizes
