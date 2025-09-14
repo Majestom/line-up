@@ -63,14 +63,48 @@ const UserButton = styled.button`
   border-radius: 8px;
   cursor: pointer;
   font-size: 1rem;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
 
   &:hover {
     background: #0056b3;
+    transform: translateY(-1px);
+  }
+
+  &:focus {
+    outline: 3px solid #ffc107;
+    outline-offset: 2px;
+    background: #0056b3;
+  }
+
+  &:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid #ffc107;
+    outline-offset: 2px;
+    background: #0056b3;
+  }
+
+  &:active {
+    transform: translateY(0);
+    background: #004085;
   }
 
   @media (max-width: 768px) {
     min-width: 100px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+
+    &:active {
+      transform: none;
+    }
   }
 `;
 
@@ -94,14 +128,14 @@ export const Home = () => {
 
   return (
     <HomePage>
-      <HeaderSection>
+      <HeaderSection role="banner">
         <Title>User Data Application</Title>
         <Subtitle>This application demonstrates fetching and displaying user data from an API.</Subtitle>
       </HeaderSection>
 
-      <Content>
-        <Section>
-          <SectionTitle>How to use</SectionTitle>
+      <Content role="main" id="main-content">
+        <Section aria-labelledby="instructions-heading">
+          <SectionTitle id="instructions-heading">How to use</SectionTitle>
           <InstructionList>
             <li>Click on a sample user ID below</li>
             <li>Or navigate directly to /user/[id] in the URL</li>
@@ -109,13 +143,15 @@ export const Home = () => {
           </InstructionList>
         </Section>
 
-        <Section>
-          <SectionTitle>Sample Users</SectionTitle>
-          <UserGrid>
+        <Section aria-labelledby="sample-users-heading">
+          <SectionTitle id="sample-users-heading">Sample Users</SectionTitle>
+          <UserGrid role="grid" aria-label="Sample user navigation buttons">
             {sampleUsers.map((userId) => (
               <UserButton
                 key={userId}
                 onClick={() => navigate(`/user/${userId}`)}
+                aria-label={`View details for user ${userId}`}
+                role="gridcell"
               >
                 User {userId}
               </UserButton>
@@ -123,11 +159,11 @@ export const Home = () => {
           </UserGrid>
         </Section>
 
-        <Section className="api-info">
-          <SectionTitle>API Information</SectionTitle>
+        <Section className="api-info" aria-labelledby="api-info-heading">
+          <SectionTitle id="api-info-heading">API Information</SectionTitle>
           <p>
             This application fetches data from a Python FastAPI backend that proxies
-            requests to the <ExternalLink href="https://reqres.in" target="_blank" rel="noopener noreferrer">
+            requests to the <ExternalLink href="https://reqres.in" target="_blank" rel="noopener noreferrer" aria-label="Visit reqres.in API website (opens in new tab)">
             reqres.in API</ExternalLink>.
           </p>
           <ApiList>

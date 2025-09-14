@@ -128,13 +128,13 @@ const ErrorContainer = styled.div`
 export const UserCard = ({ user, loading, error }: UserCardProps) => {
   if (loading) {
     return (
-      <CardContainer>
+      <CardContainer role="status" aria-live="polite" aria-label="Loading user information">
         <LoadingSkeleton>
-          <SkeletonAvatar />
+          <SkeletonAvatar aria-label="Loading user avatar" />
           <SkeletonInfo>
-            <SkeletonText height="2rem" width="60%" />
-            <SkeletonText height="1rem" width="30%" />
-            <SkeletonText height="1rem" width="80%" />
+            <SkeletonText height="2rem" width="60%" aria-label="Loading user name" />
+            <SkeletonText height="1rem" width="30%" aria-label="Loading user ID" />
+            <SkeletonText height="1rem" width="80%" aria-label="Loading user email" />
           </SkeletonInfo>
         </LoadingSkeleton>
       </CardContainer>
@@ -143,7 +143,7 @@ export const UserCard = ({ user, loading, error }: UserCardProps) => {
 
   if (error) {
     return (
-      <ErrorContainer>
+      <ErrorContainer role="alert" aria-live="assertive">
         <p>Error: {error}</p>
       </ErrorContainer>
     );
@@ -154,16 +154,16 @@ export const UserCard = ({ user, loading, error }: UserCardProps) => {
   }
 
   return (
-    <CardContainer>
+    <CardContainer role="article" aria-labelledby={`user-name-${user.id}`}>
       <Avatar
         src={user.avatar}
-        alt={`${user.first_name} ${user.last_name}`}
+        alt={`Profile photo of ${user.first_name} ${user.last_name}`}
         loading="lazy"
       />
       <UserInfo>
-        <UserName>{user.first_name} {user.last_name}</UserName>
+        <UserName id={`user-name-${user.id}`}>{user.first_name} {user.last_name}</UserName>
         <UserId>ID: {user.id}</UserId>
-        <UserEmail>{user.email}</UserEmail>
+        <UserEmail aria-label={`Email address: ${user.email}`}>{user.email}</UserEmail>
       </UserInfo>
     </CardContainer>
   );

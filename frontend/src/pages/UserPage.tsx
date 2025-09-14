@@ -41,10 +41,30 @@ const Label = styled.label`
 
 const Input = styled.input`
   padding: 0.5rem;
-  border: 1px solid #ddd;
+  border: 2px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
   width: 120px;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  }
+
+  &:invalid {
+    border-color: #dc3545;
+  }
+
+  &:invalid:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 `;
 
 const Instructions = styled.div`
@@ -98,7 +118,7 @@ export const UserPage = () => {
 
   return (
     <PageContainer>
-      <Header>
+      <Header role="banner">
         <Title>User Profile</Title>
         <UserIdInput>
           <Label htmlFor="userId">User ID:</Label>
@@ -109,23 +129,27 @@ export const UserPage = () => {
             value={id || ''}
             onChange={(e) => handleUserIdChange(e.target.value)}
             placeholder="Enter user ID"
+            aria-describedby="user-id-help"
+            aria-label="Enter user ID to view profile"
           />
         </UserIdInput>
       </Header>
 
-      {shouldShowCard && (
-        <UserCard
-          user={userResponse?.data}
-          loading={isLoading}
-          error={error ? getErrorMessage() : undefined}
-        />
-      )}
+      <main role="main" id="main-content">
+        {shouldShowCard && (
+          <UserCard
+            user={userResponse?.data}
+            loading={isLoading}
+            error={error ? getErrorMessage() : undefined}
+          />
+        )}
 
-      {shouldShowInstructions && (
-        <Instructions>
-          <p>Enter a user ID above to view user details, or visit /user/1 to /user/12 for sample users.</p>
-        </Instructions>
-      )}
+        {shouldShowInstructions && (
+          <Instructions id="user-id-help" role="status" aria-live="polite">
+            <p>Enter a user ID above to view user details, or visit /user/1 to /user/12 for sample users.</p>
+          </Instructions>
+        )}
+      </main>
     </PageContainer>
   );
 };
